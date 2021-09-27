@@ -1,21 +1,28 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState, useEffect } from "react";
+import { SafeAreaView, FlatList, StyleSheet, StatusBar } from "react-native";
 
-export default function App() {
+import ImageContainer from "./src/ImageContainer";
+const apiData = require("./api/data.json");
+
+const App = () => {
+  const [data, setData] = useState(apiData.hits);
+
+  useEffect(() => {
+    console.log(data.length);
+    // TODO get data from api
+    // const data = getData();
+    // this.setState({ data: data.hits });
+  }, []);
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaView>
+      <FlatList
+        numColumns={2}
+        data={data}
+        renderItem={(image) => <ImageContainer image={image} />}
+        keyExtractor={(image) => image.id.toString()}
+      />
+    </SafeAreaView>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App;
