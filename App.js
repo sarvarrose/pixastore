@@ -1,35 +1,30 @@
-import React, { useState, useEffect } from "react";
-import { SafeAreaView, FlatList, StyleSheet, StatusBar } from "react-native";
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import ImageContainer from "./src/ImageContainer";
-const apiData = require("./api/data.json");
+import HomeScreen from "./src/HomeScreen";
+import DetailScreen from "./src/DetailScreen";
+import { StatusBar } from "react-native";
+
+const Stack = createNativeStackNavigator();
 
 const App = () => {
-  const [data, setData] = useState(apiData.hits);
-
-  useEffect(() => {
-    console.log(data.length);
-    // TODO get data from api
-    // const data = getData();
-    // this.setState({ data: data.hits });
-  }, []);
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar />
-      <FlatList
-        numColumns={2}
-        data={data}
-        renderItem={({ item }) => <ImageContainer image={item} />}
-        keyExtractor={(image) => image.id.toString()}
-      />
-    </SafeAreaView>
+    <NavigationContainer style={{ paddingTop: StatusBar.currentHeight }}>
+      <Stack.Navigator>
+        <Stack.Screen
+          name="HomeScreen"
+          component={HomeScreen}
+          title="Gallery"
+        />
+        <Stack.Screen
+          name="DetailScreen"
+          component={DetailScreen}
+          options={{ headerShown: false }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default App;
