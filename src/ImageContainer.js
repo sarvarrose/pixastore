@@ -1,14 +1,29 @@
 import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import {
+  Alert,
+  TouchableOpacity,
+  View,
+  Text,
+  Image,
+  StyleSheet,
+} from "react-native";
 
 export const ImageContainer = ({ image }) => {
-  const { id, previewURL } = image.item;
+  const { id, previewURL } = image;
+
+  // TODO add handlePress
+  const handlePress = (id) => {
+    console.log(id);
+    Alert.alert("Image Details", `ID: ${id}`);
+  };
 
   return (
-    <View style={styles.container}>
-      <Image style={styles.image} source={{ uri: previewURL }}></Image>
-      <Text style={styles.name}>{id}</Text>
-    </View>
+    <TouchableOpacity style={styles.container} onPress={() => handlePress(id)}>
+      <View>
+        <Image style={styles.image} source={{ uri: previewURL }}></Image>
+        <Text style={styles.name}>{id}</Text>
+      </View>
+    </TouchableOpacity>
   );
 };
 
