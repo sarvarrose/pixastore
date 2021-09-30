@@ -9,6 +9,8 @@ import {
   Image,
   Text,
   TouchableOpacity,
+  BackHandler,
+  Alert,
 } from "react-native";
 import { SearchBar } from "react-native-elements";
 
@@ -27,13 +29,30 @@ class HomeScreen extends Component {
   }
 
   componentDidMount() {
+    this.backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      this.backAction
+    );
+    console.log({
+      TYPE: "componentDidMount",
+      PROPS: this.props,
+      STATE: this.state,
+    });
     this.makeRemoteRequest();
+  }
+
+  componentWillUnmount() {
+    this.backHandler.remove();
   }
 
   makeRemoteRequest = () => {
     // This is redirection to search
     const searchQuery = this.props.route.params?.query;
-    console.log("Before Request: ", this.state.query, searchQuery);
+    console.log({
+      TYPE: "Before makeRemoteRequest",
+      PROPS: this.props,
+      STATE: this.state,
+    });
     this.setState(
       () => {
         return searchQuery && !this.state.query
@@ -41,6 +60,11 @@ class HomeScreen extends Component {
           : { loading: true };
       },
       () => {
+        console.log({
+          TYPE: "Before makeRemoteRequest",
+          PROPS: this.props,
+          STATE: this.state,
+        });
         let url = `https://pixabay.com/api/?key=23580743-ffaba0b807ad288992a720125&page=${
           this.state.page
         }&q=${this.formatQueryString(this.state.query)}`;
@@ -48,11 +72,21 @@ class HomeScreen extends Component {
         fetch(url)
           .then((res) => res.json())
           .then((res) => {
-            this.setState({
-              data: [...this.state.data, ...res.hits], //TODO make different data and fulldata
-              loading: false,
-              refreshing: false,
-            });
+            this.setState(
+              {
+                data: [...this.state.data, ...res.hits], //TODO make different data and fulldata
+                loading: false,
+                refreshing: false,
+              },
+              () => {
+                console.log({
+                  TYPE: "After makeRemoteRequest",
+                  PROPS: this.props,
+                  STATE: this.state.query,
+                  OTHER: { dataLength: this.state.data.length },
+                });
+              }
+            );
           })
           .catch((error) => {
             console.log(error);
@@ -60,6 +94,20 @@ class HomeScreen extends Component {
           });
       }
     );
+  };
+
+  backAction = () => {
+    if (!this.props.navigation.canGoBack()) {
+      Alert.alert("Exit?", "Are you sure you want to go exit?", [
+        {
+          text: "Cancel",
+          onPress: () => null,
+          style: "cancel",
+        },
+        { text: "YES", onPress: () => BackHandler.exitApp() },
+      ]);
+      return true;
+    }
   };
 
   handleRefresh = () => {
@@ -96,6 +144,15 @@ class HomeScreen extends Component {
   };
 
   handleSearchClear = () => {
+    console.log({
+      TYPE: "Before Search Clear",
+      STATE: this.props.route,
+    });
+    this.props.route.params = null;
+    console.log({
+      TYPE: "After Search Clear",
+      STATE: this.props.route,
+    });
     this.setState({ query: "", data: [] }, () => this.makeRemoteRequest());
   };
 
@@ -106,10 +163,10 @@ class HomeScreen extends Component {
   renderHeader = () => {
     return (
       <SearchBar
-        placeholder="Search ..."
+        placeholder="Search Images ..."
         round
         onChangeText={this.handleSearch}
-        // onClear={this.handleSearchClear}
+        onClear={this.handleSearchClear}
         value={this.state.query}
       />
     );
@@ -123,7 +180,7 @@ class HomeScreen extends Component {
           onPress={() => {
             console.log(item.id, index);
             this.setState({ openImage: index });
-            this.props.navigation.navigate("DetailScreen", { image: item });
+            this.props.navigation.push("DetailScreen", { image: item });
           }}
         >
           <Image

@@ -25,7 +25,7 @@ class DetailScreen extends React.Component {
             style={styles.backButton}
             key={image.id}
             onPress={() => {
-              this.props.navigation.navigate("HomeScreen");
+              this.props.navigation.goBack();
             }}
           >
             <Text style={styles.text}>Back</Text>
