@@ -10,6 +10,7 @@ import {
   Text,
   TouchableOpacity,
   BackHandler,
+  Dimensions,
   Alert,
 } from "react-native";
 import { SearchBar } from "react-native-elements";
@@ -17,6 +18,12 @@ import { SearchBar } from "react-native-elements";
 class HomeScreen extends Component {
   constructor(props) {
     super(props);
+
+    const isPortrait = () => {
+      const dim = Dimensions.get("screen");
+      return dim.height >= dim.width;
+    };
+
     this.state = {
       data: [],
       page: 1,
@@ -24,8 +31,16 @@ class HomeScreen extends Component {
       refreshing: false,
       query: "",
       error: null,
-      // openImage: null,
+      orientation: isPortrait() ? "portrait" : "landscape",
+      listTopIndex: 0,
     };
+
+    // Event Listener for orientation changes
+    Dimensions.addEventListener("change", () => {
+      this.setState({
+        orientation: isPortrait() ? "portrait" : "landscape",
+      });
+    });
   }
 
   componentDidMount() {
@@ -33,6 +48,7 @@ class HomeScreen extends Component {
       "hardwareBackPress",
       this.backAction
     );
+
     console.log({
       TYPE: "componentDidMount",
       PROPS: this.props,
@@ -60,11 +76,11 @@ class HomeScreen extends Component {
           : { loading: true };
       },
       () => {
-        console.log({
-          TYPE: "Before makeRemoteRequest",
-          PROPS: this.props,
-          STATE: this.state,
-        });
+        // console.log({
+        //   TYPE: "Before makeRemoteRequest",
+        //   PROPS: this.props,
+        //   STATE: this.state,
+        // });
         let url = `https://pixabay.com/api/?key=23580743-ffaba0b807ad288992a720125&page=${
           this.state.page
         }&q=${this.formatQueryString(this.state.query)}`;
@@ -82,12 +98,16 @@ class HomeScreen extends Component {
                 refreshing: false,
               },
               () => {
-                console.log({
-                  TYPE: "After makeRemoteRequest",
-                  PROPS: this.props,
-                  STATE: this.state.query,
-                  OTHER: { dataLength: this.state.data.length, url: url },
-                });
+                // console.log({
+                //   TYPE: "After makeRemoteRequest",
+                //   PROPS: this.props,
+                //   STATE: this.state.query,
+                //   OTHER: {
+                //     dataLength: this.state.data.length,
+                //     url: url,
+                //     Orientation: this.state.orientation,
+                //   },
+                // });
               }
             );
           })
@@ -187,7 +207,7 @@ class HomeScreen extends Component {
               name: item.pageURL.substr(27).slice(0, -9),
               index,
             });
-            // this.setState({ openImage: index });
+            // this.setState({ listTopIndex: index });
             this.props.navigation.push("DetailScreen", { image: item });
           }}
         >
@@ -209,6 +229,36 @@ class HomeScreen extends Component {
     );
   };
 
+  onViewableItemsChanged = ({ viewableItems, changed }) => {
+    // console.log(
+    //   "Visible items are",
+    //   viewableItems.map((item) => {
+    //     return { index: item.index, isViewable: item.isViewable };
+    //   })
+    // );
+    // console.log(
+    //   "Changed in this iteration",
+    //   changed.map((item) => {
+    //     return { index: item.index, isViewable: item.isViewable };
+    //   })
+    // );
+    this.setState({ listTopIndex: viewableItems[0].index });
+    console.log(viewableItems[0].index);
+  };
+
+  handleScrollToIndex = () => {
+    setTimeout(() => {
+      return {
+        animated: true,
+        index:
+          this.state.listTopIndex / this.state.orientation === "portrait"
+            ? 2
+            : 4,
+        viewPosition: 0,
+      };
+    }, 500);
+  };
+
   render() {
     return (
       <SafeAreaView>
@@ -224,11 +274,18 @@ class HomeScreen extends Component {
           refreshing={this.state.refreshing}
           onEndReached={this.handleLoadMore}
           onEndReachedThreshold={0.5}
-          // scrollToIndex // set to scroll to exact item
-          numColumns={2}
           ListEmptyComponent={
             !this.state.loading ? <Text>No Images Found</Text> : null
           }
+          // // onScrollEndDrag={() => console.log("end")}
+          // onViewableItemsChanged={this.onViewableItemsChanged}
+          // viewabilityConfig={{
+          //   itemVisiblePercentThreshold: 80,
+          // }}
+          // scrollToIndex={this.handleScrollToIndex} // set to scroll to exact item
+          // key={this.state.orientation === "portrait" ? 2 : 4}
+          // extraData={this.state}
+          numColumns={this.state.orientation === "portrait" ? 2 : 4}
         />
       </SafeAreaView>
     );
