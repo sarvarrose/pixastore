@@ -6,6 +6,8 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
 
 let deviceHeight = Dimensions.get("window").height;
@@ -16,39 +18,45 @@ class DetailScreen extends React.Component {
     const { image } = this.props.route.params;
 
     return (
-      <View style={styles.container}>
-        <ImageBackground
-          source={{ uri: image.largeImageURL }} //change to largeImageURL from previewURL
-          style={styles.imageBackground}
-        >
-          <TouchableOpacity
-            style={styles.backButton}
-            key={image.id}
-            onPress={() => {
-              this.props.navigation.goBack();
-            }}
+      <SafeAreaView>
+        <StatusBar style="light-content" />
+        <View style={styles.container}>
+          <ImageBackground
+            source={{ uri: image.largeImageURL }} //change to largeImageURL from previewURL
+            style={styles.imageBackground}
           >
-            <Text style={styles.text}>Back</Text>
-          </TouchableOpacity>
-          <View style={styles.textContainer}>
-            <Text style={styles.text}>{image.user}</Text>
-            {image.tags.split(", ").map((tag) => {
-              return (
-                <TouchableOpacity
-                  key={tag}
-                  onPress={() => {
-                    this.props.navigation.push("HomeScreen", {
-                      query: tag,
-                    });
-                  }}
-                >
-                  <Text>#{tag}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </ImageBackground>
-      </View>
+            <TouchableOpacity
+              style={styles.backButton}
+              key={image.id}
+              onPress={() => {
+                this.props.navigation.goBack();
+              }}
+            >
+              <Text style={styles.text}>Back</Text>
+            </TouchableOpacity>
+            <View style={styles.textContainer}>
+              <Text style={styles.text}>Uploader: {image.user}</Text>
+              <Text style={styles.text}>
+                Resolution: {image.imageWidth}x{image.imageHeight}
+              </Text>
+              {image.tags.split(", ").map((tag) => {
+                return (
+                  <TouchableOpacity
+                    key={tag}
+                    onPress={() => {
+                      this.props.navigation.push("HomeScreen", {
+                        query: tag,
+                      });
+                    }}
+                  >
+                    <Text>#{tag}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </ImageBackground>
+        </View>
+      </SafeAreaView>
     );
   }
 }
