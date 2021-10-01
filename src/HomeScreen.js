@@ -24,7 +24,7 @@ class HomeScreen extends Component {
       refreshing: false,
       query: "",
       error: null,
-      openImage: null,
+      // openImage: null,
     };
   }
 
@@ -74,6 +74,9 @@ class HomeScreen extends Component {
           .then((res) => {
             this.setState(
               {
+                // data: this.state.data.concat(
+                //   res.hits.filter((item) => this.state.data.indexOf(item) < 0)
+                // ),
                 data: [...this.state.data, ...res.hits], //TODO make different data and fulldata
                 loading: false,
                 refreshing: false,
@@ -83,7 +86,7 @@ class HomeScreen extends Component {
                   TYPE: "After makeRemoteRequest",
                   PROPS: this.props,
                   STATE: this.state.query,
-                  OTHER: { dataLength: this.state.data.length },
+                  OTHER: { dataLength: this.state.data.length, url: url },
                 });
               }
             );
@@ -178,8 +181,13 @@ class HomeScreen extends Component {
         <TouchableOpacity
           key={item.id}
           onPress={() => {
-            console.log(item.id, index);
-            this.setState({ openImage: index });
+            console.log({
+              PAGE: "DetailScreen",
+              id: item.id,
+              name: item.pageURL.substr(27).slice(0, -9),
+              index,
+            });
+            // this.setState({ openImage: index });
             this.props.navigation.push("DetailScreen", { image: item });
           }}
         >
