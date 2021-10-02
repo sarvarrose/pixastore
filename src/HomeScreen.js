@@ -28,14 +28,14 @@ export default class HomeScreen extends React.Component {
 
     this.state = {
       data: [],
+      query: "",
       page: 1,
+      queryPages: 0,
+      listTopIndex: 0,
       loading: false,
       refreshing: false,
-      query: "",
       error: null,
-      queryPages: 0,
       orientation: isPortrait() ? "portrait" : "landscape",
-      listTopIndex: 0,
     };
 
     Dimensions.addEventListener("change", () => {
