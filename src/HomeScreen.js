@@ -13,6 +13,7 @@ import {
   Alert,
 } from "react-native";
 import { SearchBar } from "react-native-elements";
+import _ from "lodash";
 
 import styles from "./HomeScreen.component.style";
 
@@ -54,7 +55,7 @@ export default class HomeScreen extends React.Component {
     //   PROPS: this.props,
     //   STATE: Object.assign({}, this.state, { data: this.state.data.length }),
     // });
-    this.makeRemoteRequest();
+    this.makeUrlWithRequest();
   }
 
   componentWillUnmount() {
@@ -76,13 +77,57 @@ export default class HomeScreen extends React.Component {
   };
 
   formatQueryString = (text) => {
-    return encodeURIComponent(text.toLowerCase()).replace("%20", "+");
+    return encodeURIComponent(text.toLowerCase()).replace(/%20/g, "+");
   };
 
-  makeRemoteRequest = () => {
+  fetchData = _.debounce((url) => {
+    console.log(url);
+    return fetch(url)
+      .then((res) => {
+        // console.log(res.status); // Will show you the status
+        if (!res.ok) {
+          this.setState({ error, loading: false });
+          throw new Error("HTTP status " + res.status);
+        }
+        return res.json();
+        // return data;
+      })
+      .then((res) => {
+        this.setState(
+          {
+            // data: this.state.data.concat(
+            //   res.hits.filter((item) => this.state.data.indexOf(item) < 0)
+            // ),
+            data: [...this.state.data, ...res.hits], //TODO make different data and fulldata
+            loading: false,
+            queryPages: Math.ceil(res.totalHits / 20),
+
+            refreshing: false,
+          },
+          () => {
+            console.log({
+              // TYPE: "After makeUrlWithRequest",
+              // PROPS: this.props,
+              // STATE: this.state.query,
+              OTHER: {
+                dataLength: this.state.data.length,
+                url: url,
+                Orientation: this.state.orientation,
+              },
+            });
+          }
+        );
+      })
+      .catch((error) => {
+        console.log(error);
+        this.setState({ error, loading: false });
+      });
+  }, 250);
+
+  makeUrlWithRequest = () => {
     const searchQuery = this.props.route.params?.query;
     // console.log({
-    //   TYPE: "Before makeRemoteRequest",
+    //   TYPE: "Before makeUrlWithRequest",
     //   PROPS: this.props,
     //   STATE: Object.assign({}, this.state, { data: this.state.data.length }),
     // });
@@ -94,7 +139,7 @@ export default class HomeScreen extends React.Component {
       },
       () => {
         // console.log({
-        //   TYPE: "Before makeRemoteRequest",
+        //   TYPE: "Before makeUrlWithRequest",
         //   PROPS: this.props,
         //   STATE: Object.assign({}, this.state, {data: undefined})
         // });
@@ -102,46 +147,8 @@ export default class HomeScreen extends React.Component {
           this.state.page
         }&q=${this.formatQueryString(this.state.query)}`;
         // console.log(this.state.query);
-        fetch(url)
-          .then((res) => {
-            console.log(res.status); // Will show you the status
-            if (!res.ok) {
-              this.setState({ error, loading: false });
-              throw new Error("HTTP status " + res.status);
-            }
-            return res.json();
-            // return data;
-          })
-          .then((res) => {
-            this.setState(
-              {
-                // data: this.state.data.concat(
-                //   res.hits.filter((item) => this.state.data.indexOf(item) < 0)
-                // ),
-                data: [...this.state.data, ...res.hits], //TODO make different data and fulldata
-                loading: false,
-                queryPages: Math.ceil(res.totalHits / 20),
 
-                refreshing: false,
-              },
-              () => {
-                console.log({
-                  // TYPE: "After makeRemoteRequest",
-                  // PROPS: this.props,
-                  // STATE: this.state.query,
-                  OTHER: {
-                    dataLength: this.state.data.length,
-                    url: url,
-                    Orientation: this.state.orientation,
-                  },
-                });
-              }
-            );
-          })
-          .catch((error) => {
-            console.log(error);
-            this.setState({ error, loading: false });
-          });
+        this.fetchData(url);
       }
     );
   };
@@ -154,7 +161,7 @@ export default class HomeScreen extends React.Component {
         data: [],
       },
       () => {
-        this.makeRemoteRequest();
+        this.makeUrlWithRequest();
       }
     );
   };
@@ -166,13 +173,13 @@ export default class HomeScreen extends React.Component {
         page: state.page + 1,
       }),
       () => {
-        this.makeRemoteRequest();
+        this.makeUrlWithRequest();
       }
     );
   };
 
   handleSearch = (query) => {
-    this.setState({ query, data: [] }, () => this.makeRemoteRequest());
+    this.setState({ query, data: [] }, () => this.makeUrlWithRequest());
   };
 
   handleSearchClear = () => {
@@ -246,6 +253,7 @@ export default class HomeScreen extends React.Component {
   };
 
   renderFooter = () => {
+    if (!this.state.data.length) return null;
     return (
       <View style={styles.footerContainer}>
         {!this.state.loading && this.state.page >= this.state.queryPages ? (
@@ -285,8 +293,9 @@ export default class HomeScreen extends React.Component {
           stickyHeaderIndices={[0]}
           refreshing={this.state.refreshing}
           onEndReachedThreshold={0.5}
-          numColumns={this.state.orientation === "portrait" ? 2 : 4}
-          key={this.state.orientation === "portrait" ? 2 : 4}
+          numColumns={2}
+          // numColumns={this.state.orientation === "portrait" ? 2 : 4}
+          // key={this.state.orientation === "portrait" ? 2 : 4}
           ListHeaderComponent={this.renderHeader}
           renderItem={this.renderItem}
           ItemSeparatorComponent={this.renderSeparator}
