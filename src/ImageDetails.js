@@ -1,9 +1,9 @@
-import React, { Component } from "react";
+import React from "react";
 import { Text, View, TouchableOpacity } from "react-native";
 
 import styles from "./ImageDetails.component.style";
 
-export default class ImageDetails extends Component {
+export default class ImageDetails extends React.Component {
   render() {
     const { image, navigation } = this.props;
 

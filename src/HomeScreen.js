@@ -1,11 +1,10 @@
-import React, { Component } from "react";
+import React from "react";
 import {
   View,
   FlatList,
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
-  StyleSheet,
   Image,
   Text,
   TouchableOpacity,
@@ -15,7 +14,9 @@ import {
 } from "react-native";
 import { SearchBar } from "react-native-elements";
 
-export default class HomeScreen extends Component {
+import styles from "./HomeScreen.component.style";
+
+export default class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
 
@@ -36,7 +37,6 @@ export default class HomeScreen extends Component {
       listTopIndex: 0,
     };
 
-    // Event Listener for orientation changes
     Dimensions.addEventListener("change", () => {
       this.setState({
         orientation: isPortrait() ? "portrait" : "landscape",
@@ -49,12 +49,11 @@ export default class HomeScreen extends Component {
       "hardwareBackPress",
       this.backAction
     );
-
-    console.log({
-      TYPE: "componentDidMount",
-      PROPS: this.props,
-      STATE: Object.assign({}, this.state, { data: this.state.data.length }),
-    });
+    // console.log({
+    //   TYPE: "componentDidMount",
+    //   PROPS: this.props,
+    //   STATE: Object.assign({}, this.state, { data: this.state.data.length }),
+    // });
     this.makeRemoteRequest();
   }
 
@@ -62,14 +61,31 @@ export default class HomeScreen extends Component {
     this.backHandler.remove();
   }
 
+  backAction = () => {
+    if (!this.props.navigation.canGoBack()) {
+      Alert.alert("Exit?", "Are you sure you want to go exit?", [
+        {
+          text: "Cancel",
+          onPress: () => null,
+          style: "cancel",
+        },
+        { text: "YES", onPress: () => BackHandler.exitApp() },
+      ]);
+      return true;
+    }
+  };
+
+  formatQueryString = (text) => {
+    return encodeURIComponent(text.toLowerCase()).replace("%20", "+");
+  };
+
   makeRemoteRequest = () => {
-    // This is redirection to search
     const searchQuery = this.props.route.params?.query;
-    console.log({
-      TYPE: "Before makeRemoteRequest",
-      PROPS: this.props,
-      STATE: Object.assign({}, this.state, { data: this.state.data.length }),
-    });
+    // console.log({
+    //   TYPE: "Before makeRemoteRequest",
+    //   PROPS: this.props,
+    //   STATE: Object.assign({}, this.state, { data: this.state.data.length }),
+    // });
     this.setState(
       () => {
         return searchQuery && !this.state.query
@@ -90,6 +106,7 @@ export default class HomeScreen extends Component {
           .then((res) => {
             console.log(res.status); // Will show you the status
             if (!res.ok) {
+              this.setState({ error, loading: false });
               throw new Error("HTTP status " + res.status);
             }
             return res.json();
@@ -109,8 +126,8 @@ export default class HomeScreen extends Component {
               },
               () => {
                 console.log({
-                  TYPE: "After makeRemoteRequest",
-                  PROPS: this.props,
+                  // TYPE: "After makeRemoteRequest",
+                  // PROPS: this.props,
                   // STATE: this.state.query,
                   OTHER: {
                     dataLength: this.state.data.length,
@@ -127,20 +144,6 @@ export default class HomeScreen extends Component {
           });
       }
     );
-  };
-
-  backAction = () => {
-    if (!this.props.navigation.canGoBack()) {
-      Alert.alert("Exit?", "Are you sure you want to go exit?", [
-        {
-          text: "Cancel",
-          onPress: () => null,
-          style: "cancel",
-        },
-        { text: "YES", onPress: () => BackHandler.exitApp() },
-      ]);
-      return true;
-    }
   };
 
   handleRefresh = () => {
@@ -168,10 +171,6 @@ export default class HomeScreen extends Component {
     );
   };
 
-  formatQueryString = (text) => {
-    return encodeURIComponent(text.toLowerCase()).replace("%20", "+");
-  };
-
   handleSearch = (query) => {
     this.setState({ query, data: [] }, () => this.makeRemoteRequest());
   };
@@ -181,8 +180,28 @@ export default class HomeScreen extends Component {
     this.setState({ query: "", data: [], page: 1 });
   };
 
-  renderSeparator = () => {
-    return <View style={styles.separator} />;
+  // TODO remove
+  handleScrollToIndex = () => {
+    setTimeout(() => {
+      return {
+        animated: true,
+        index:
+          this.state.listTopIndex / this.state.orientation === "portrait"
+            ? 2
+            : 4,
+        viewPosition: 0,
+      };
+    }, 500);
+  };
+
+  renderEmptyContainer = () => {
+    return (
+      <Text style={styles.textCenter}>
+        {!this.state.loading && !this.state.data.length
+          ? "No Images Found"
+          : "Loading Images"}
+      </Text>
+    );
   };
 
   renderHeader = () => {
@@ -203,12 +222,12 @@ export default class HomeScreen extends Component {
         <TouchableOpacity
           key={item.id}
           onPress={() => {
-            console.log({
-              PAGE: "DetailScreen",
-              id: item.id,
-              name: item.pageURL.substr(27).slice(0, -9),
-              index,
-            });
+            // console.log({
+            //   PAGE: "DetailScreen",
+            //   id: item.id,
+            //   name: item.pageURL.substr(27).slice(0, -9),
+            //   index,
+            // });
             // this.setState({ listTopIndex: index });
             this.props.navigation.push("DetailScreen", { image: item });
           }}
@@ -222,15 +241,23 @@ export default class HomeScreen extends Component {
     );
   };
 
+  renderSeparator = () => {
+    return <View style={styles.separator} />;
+  };
+
   renderFooter = () => {
-    if (!this.state.loading) return null;
     return (
       <View style={styles.footerContainer}>
-        <ActivityIndicator animating size="large" color="#0000ff" />
+        {!this.state.loading && this.state.page >= this.state.queryPages ? (
+          <Text style={styles.textCenter}>No More Images Found</Text>
+        ) : (
+          <ActivityIndicator animating size="large" color="#0000ff" />
+        )}
       </View>
     );
   };
 
+  // TODO remove
   onViewableItemsChanged = ({ viewableItems, changed }) => {
     // console.log(
     //   "Visible items are",
@@ -245,20 +272,7 @@ export default class HomeScreen extends Component {
     //   })
     // );
     this.setState({ listTopIndex: viewableItems[0].index });
-    console.log(viewableItems[0].index);
-  };
-
-  handleScrollToIndex = () => {
-    setTimeout(() => {
-      return {
-        animated: true,
-        index:
-          this.state.listTopIndex / this.state.orientation === "portrait"
-            ? 2
-            : 4,
-        viewPosition: 0,
-      };
-    }, 500);
+    console.log(`Top Item Index: ${viewableItems[0].index}`);
   };
 
   render() {
@@ -267,55 +281,27 @@ export default class HomeScreen extends Component {
         <StatusBar style="light-content" />
         <FlatList
           data={this.state.data}
-          renderItem={this.renderItem}
           keyExtractor={(item) => (item.id + item.user_id).toString()}
-          ItemSeparatorComponent={this.renderSeparator}
-          ListHeaderComponent={this.renderHeader}
-          ListFooterComponent={this.renderFooter}
-          onRefresh={this.handleRefresh}
+          stickyHeaderIndices={[0]}
           refreshing={this.state.refreshing}
-          onEndReached={this.handleLoadMore}
           onEndReachedThreshold={0.5}
-          ListEmptyComponent={
-            !this.state.loading && !this.state.data.length ? (
-              <Text>No Images Found</Text>
-            ) : null
-          }
+          numColumns={this.state.orientation === "portrait" ? 2 : 4}
+          key={this.state.orientation === "portrait" ? 2 : 4}
+          ListHeaderComponent={this.renderHeader}
+          renderItem={this.renderItem}
+          ItemSeparatorComponent={this.renderSeparator}
+          ListFooterComponent={this.renderFooter}
+          ListEmptyComponent={this.renderEmptyContainer}
+          onRefresh={this.handleRefresh}
+          onEndReached={this.handleLoadMore}
+          // TODO remove
           // onViewableItemsChanged={this.onViewableItemsChanged}
           // viewabilityConfig={{
           //   itemVisiblePercentThreshold: 80,
           // }}
           // scrollToIndex={this.handleScrollToIndex} // set to scroll to exact item
-          key={this.state.orientation === "portrait" ? 2 : 4}
-          numColumns={this.state.orientation === "portrait" ? 2 : 4}
-          stickyHeaderIndices={[0]}
         />
       </SafeAreaView>
     );
   }
 }
-
-const styles = StyleSheet.create({
-  separator: {
-    height: 1,
-    backgroundColor: "#CED0CE",
-  },
-  itemContainer: {
-    flex: 1,
-    flexDirection: "column",
-    margin: 1,
-  },
-  imageThumbnail: {
-    justifyContent: "center",
-    alignItems: "center",
-    height: 150,
-    width: "auto",
-  },
-  footerContainer: {
-    flex: 1,
-    justifyContent: "center",
-    paddingVertical: 20,
-    borderTopWidth: 1,
-    borderColor: "#CED0CE",
-  },
-});
