@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { SearchBar } from "react-native-elements";
 
-class HomeScreen extends Component {
+export default class HomeScreen extends Component {
   constructor(props) {
     super(props);
 
@@ -31,6 +31,7 @@ class HomeScreen extends Component {
       refreshing: false,
       query: "",
       error: null,
+      queryPages: 0,
       orientation: isPortrait() ? "portrait" : "landscape",
       listTopIndex: 0,
     };
@@ -52,7 +53,7 @@ class HomeScreen extends Component {
     console.log({
       TYPE: "componentDidMount",
       PROPS: this.props,
-      STATE: this.state,
+      STATE: Object.assign({}, this.state, { data: this.state.data.length }),
     });
     this.makeRemoteRequest();
   }
@@ -67,7 +68,7 @@ class HomeScreen extends Component {
     console.log({
       TYPE: "Before makeRemoteRequest",
       PROPS: this.props,
-      STATE: this.state,
+      STATE: Object.assign({}, this.state, { data: this.state.data.length }),
     });
     this.setState(
       () => {
@@ -79,14 +80,21 @@ class HomeScreen extends Component {
         // console.log({
         //   TYPE: "Before makeRemoteRequest",
         //   PROPS: this.props,
-        //   STATE: this.state,
+        //   STATE: Object.assign({}, this.state, {data: undefined})
         // });
         let url = `https://pixabay.com/api/?key=23580743-ffaba0b807ad288992a720125&page=${
           this.state.page
         }&q=${this.formatQueryString(this.state.query)}`;
         // console.log(this.state.query);
         fetch(url)
-          .then((res) => res.json())
+          .then((res) => {
+            console.log(res.status); // Will show you the status
+            if (!res.ok) {
+              throw new Error("HTTP status " + res.status);
+            }
+            return res.json();
+            // return data;
+          })
           .then((res) => {
             this.setState(
               {
@@ -95,19 +103,21 @@ class HomeScreen extends Component {
                 // ),
                 data: [...this.state.data, ...res.hits], //TODO make different data and fulldata
                 loading: false,
+                queryPages: Math.ceil(res.totalHits / 20),
+
                 refreshing: false,
               },
               () => {
-                // console.log({
-                //   TYPE: "After makeRemoteRequest",
-                //   PROPS: this.props,
-                //   STATE: this.state.query,
-                //   OTHER: {
-                //     dataLength: this.state.data.length,
-                //     url: url,
-                //     Orientation: this.state.orientation,
-                //   },
-                // });
+                console.log({
+                  TYPE: "After makeRemoteRequest",
+                  PROPS: this.props,
+                  // STATE: this.state.query,
+                  OTHER: {
+                    dataLength: this.state.data.length,
+                    url: url,
+                    Orientation: this.state.orientation,
+                  },
+                });
               }
             );
           })
@@ -147,7 +157,7 @@ class HomeScreen extends Component {
   };
 
   handleLoadMore = () => {
-    if (this.state.loading) return;
+    if (this.state.loading || this.state.page >= this.state.queryPages) return;
     this.setState(
       (state) => ({
         page: state.page + 1,
@@ -167,16 +177,8 @@ class HomeScreen extends Component {
   };
 
   handleSearchClear = () => {
-    console.log({
-      TYPE: "Before Search Clear",
-      STATE: this.props.route,
-    });
     this.props.route.params = null;
-    console.log({
-      TYPE: "After Search Clear",
-      STATE: this.props.route,
-    });
-    this.setState({ query: "", data: [] }, () => this.makeRemoteRequest());
+    this.setState({ query: "", data: [], page: 1 });
   };
 
   renderSeparator = () => {
@@ -266,7 +268,7 @@ class HomeScreen extends Component {
         <FlatList
           data={this.state.data}
           renderItem={this.renderItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => (item.id + item.user_id).toString()}
           ItemSeparatorComponent={this.renderSeparator}
           ListHeaderComponent={this.renderHeader}
           ListFooterComponent={this.renderFooter}
@@ -275,17 +277,18 @@ class HomeScreen extends Component {
           onEndReached={this.handleLoadMore}
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
-            !this.state.loading ? <Text>No Images Found</Text> : null
+            !this.state.loading && !this.state.data.length ? (
+              <Text>No Images Found</Text>
+            ) : null
           }
-          // // onScrollEndDrag={() => console.log("end")}
           // onViewableItemsChanged={this.onViewableItemsChanged}
           // viewabilityConfig={{
           //   itemVisiblePercentThreshold: 80,
           // }}
           // scrollToIndex={this.handleScrollToIndex} // set to scroll to exact item
-          // key={this.state.orientation === "portrait" ? 2 : 4}
-          // extraData={this.state}
+          key={this.state.orientation === "portrait" ? 2 : 4}
           numColumns={this.state.orientation === "portrait" ? 2 : 4}
+          stickyHeaderIndices={[0]}
         />
       </SafeAreaView>
     );
@@ -316,5 +319,3 @@ const styles = StyleSheet.create({
     borderColor: "#CED0CE",
   },
 });
-
-export default HomeScreen;
