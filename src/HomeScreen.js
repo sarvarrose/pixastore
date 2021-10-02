@@ -12,15 +12,15 @@ import {
   Dimensions,
   Alert,
 } from "react-native";
-import { SearchBar } from "react-native-elements";
 import _ from "lodash";
+import { SearchBar } from "react-native-elements";
+import { PIXA_KEY } from "@env";
 
 import styles from "./HomeScreen.component.style";
 
 export default class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
-
     const isPortrait = () => {
       const dim = Dimensions.get("screen");
       return dim.height >= dim.width;
@@ -50,11 +50,6 @@ export default class HomeScreen extends React.Component {
       "hardwareBackPress",
       this.backAction
     );
-    // console.log({
-    //   TYPE: "componentDidMount",
-    //   PROPS: this.props,
-    //   STATE: Object.assign({}, this.state, { data: this.state.data.length }),
-    // });
     this.makeUrlWithRequest();
   }
 
@@ -84,39 +79,20 @@ export default class HomeScreen extends React.Component {
     console.log(url);
     return fetch(url)
       .then((res) => {
-        // console.log(res.status); // Will show you the status
         if (!res.ok) {
-          this.setState({ error, loading: false });
+          this.setState({ error: true, loading: false });
           throw new Error("HTTP status " + res.status);
         }
         return res.json();
-        // return data;
       })
       .then((res) => {
-        this.setState(
-          {
-            // data: this.state.data.concat(
-            //   res.hits.filter((item) => this.state.data.indexOf(item) < 0)
-            // ),
-            data: [...this.state.data, ...res.hits], //TODO make different data and fulldata
-            loading: false,
-            queryPages: Math.ceil(res.totalHits / 20),
+        this.setState({
+          data: [...this.state.data, ...res.hits],
+          loading: false,
+          queryPages: Math.ceil(res.totalHits / 20),
 
-            refreshing: false,
-          },
-          () => {
-            console.log({
-              // TYPE: "After makeUrlWithRequest",
-              // PROPS: this.props,
-              // STATE: this.state.query,
-              OTHER: {
-                dataLength: this.state.data.length,
-                url: url,
-                Orientation: this.state.orientation,
-              },
-            });
-          }
-        );
+          refreshing: false,
+        });
       })
       .catch((error) => {
         console.log(error);
@@ -126,11 +102,7 @@ export default class HomeScreen extends React.Component {
 
   makeUrlWithRequest = () => {
     const searchQuery = this.props.route.params?.query;
-    // console.log({
-    //   TYPE: "Before makeUrlWithRequest",
-    //   PROPS: this.props,
-    //   STATE: Object.assign({}, this.state, { data: this.state.data.length }),
-    // });
+
     this.setState(
       () => {
         return searchQuery && !this.state.query
@@ -138,15 +110,9 @@ export default class HomeScreen extends React.Component {
           : { loading: true };
       },
       () => {
-        // console.log({
-        //   TYPE: "Before makeUrlWithRequest",
-        //   PROPS: this.props,
-        //   STATE: Object.assign({}, this.state, {data: undefined})
-        // });
-        let url = `https://pixabay.com/api/?key=23580743-ffaba0b807ad288992a720125&page=${
+        let url = `https://pixabay.com/api/?key=${PIXA_KEY}&page=${
           this.state.page
         }&q=${this.formatQueryString(this.state.query)}`;
-        // console.log(this.state.query);
 
         this.fetchData(url);
       }
@@ -187,18 +153,8 @@ export default class HomeScreen extends React.Component {
     this.setState({ query: "", data: [], page: 1 });
   };
 
-  // TODO remove
-  handleScrollToIndex = () => {
-    setTimeout(() => {
-      return {
-        animated: true,
-        index:
-          this.state.listTopIndex / this.state.orientation === "portrait"
-            ? 2
-            : 4,
-        viewPosition: 0,
-      };
-    }, 500);
+  onViewableItemsChanged = ({ viewableItems }) => {
+    this.setState({ listTopIndex: viewableItems[0].index });
   };
 
   renderEmptyContainer = () => {
@@ -229,13 +185,6 @@ export default class HomeScreen extends React.Component {
         <TouchableOpacity
           key={item.id}
           onPress={() => {
-            // console.log({
-            //   PAGE: "DetailScreen",
-            //   id: item.id,
-            //   name: item.pageURL.substr(27).slice(0, -9),
-            //   index,
-            // });
-            // this.setState({ listTopIndex: index });
             this.props.navigation.push("DetailScreen", { image: item });
           }}
         >
@@ -265,24 +214,6 @@ export default class HomeScreen extends React.Component {
     );
   };
 
-  // TODO remove
-  onViewableItemsChanged = ({ viewableItems, changed }) => {
-    // console.log(
-    //   "Visible items are",
-    //   viewableItems.map((item) => {
-    //     return { index: item.index, isViewable: item.isViewable };
-    //   })
-    // );
-    // console.log(
-    //   "Changed in this iteration",
-    //   changed.map((item) => {
-    //     return { index: item.index, isViewable: item.isViewable };
-    //   })
-    // );
-    this.setState({ listTopIndex: viewableItems[0].index });
-    console.log(`Top Item Index: ${viewableItems[0].index}`);
-  };
-
   render() {
     return (
       <SafeAreaView>
@@ -303,12 +234,10 @@ export default class HomeScreen extends React.Component {
           ListEmptyComponent={this.renderEmptyContainer}
           onRefresh={this.handleRefresh}
           onEndReached={this.handleLoadMore}
-          // TODO remove
-          // onViewableItemsChanged={this.onViewableItemsChanged}
-          // viewabilityConfig={{
-          //   itemVisiblePercentThreshold: 80,
-          // }}
-          // scrollToIndex={this.handleScrollToIndex} // set to scroll to exact item
+          onViewableItemsChanged={this.onViewableItemsChanged}
+          viewabilityConfig={{
+            itemVisiblePercentThreshold: 80,
+          }}
         />
       </SafeAreaView>
     );
