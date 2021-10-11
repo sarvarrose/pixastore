@@ -12,37 +12,23 @@ import {
   Dimensions,
   Alert,
 } from "react-native";
+import { connect } from "react-redux";
 import _ from "lodash";
 import { SearchBar } from "react-native-elements";
-import { PIXA_KEY } from "@env";
 
 import styles from "./HomeScreen.component.style";
+import {
+  fetchImages,
+  refreshResults,
+  loadMoreResults,
+  fetchSearch,
+  clearSearch,
+  setViewableItems,
+} from "./redux";
 
-export default class HomeScreen extends React.Component {
+class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
-    const isPortrait = () => {
-      const dim = Dimensions.get("screen");
-      return dim.height >= dim.width;
-    };
-
-    this.state = {
-      data: [],
-      query: "",
-      page: 1,
-      queryPages: 0,
-      listTopIndex: 0,
-      loading: false,
-      refreshing: false,
-      error: null,
-      orientation: isPortrait() ? "portrait" : "landscape",
-    };
-
-    Dimensions.addEventListener("change", () => {
-      this.setState({
-        orientation: isPortrait() ? "portrait" : "landscape",
-      });
-    });
   }
 
   componentDidMount() {
@@ -50,7 +36,8 @@ export default class HomeScreen extends React.Component {
       "hardwareBackPress",
       this.backAction
     );
-    this.makeUrlWithRequest();
+    console.log(this.props);
+    this.props.fetchImages(); //set query parameter
   }
 
   componentWillUnmount() {
@@ -71,96 +58,31 @@ export default class HomeScreen extends React.Component {
     }
   };
 
-  formatQueryString = (text) => {
-    return encodeURIComponent(text.toLowerCase()).replace(/%20/g, "+");
-  };
-
-  fetchData = _.debounce((url) => {
-    console.log(url);
-    return fetch(url)
-      .then((res) => {
-        if (!res.ok) {
-          this.setState({ error: true, loading: false });
-          throw new Error("HTTP status " + res.status);
-        }
-        return res.json();
-      })
-      .then((res) => {
-        this.setState({
-          data: [...this.state.data, ...res.hits],
-          loading: false,
-          queryPages: Math.ceil(res.totalHits / 20),
-
-          refreshing: false,
-        });
-      })
-      .catch((error) => {
-        console.log(error);
-        this.setState({ error, loading: false });
-      });
-  }, 250);
-
-  makeUrlWithRequest = () => {
-    const searchQuery = this.props.route.params?.query;
-
-    this.setState(
-      () => {
-        return searchQuery && !this.state.query
-          ? { data: [], page: 1, query: searchQuery, loading: true }
-          : { loading: true };
-      },
-      () => {
-        let url = `https://pixabay.com/api/?key=${PIXA_KEY}&page=${
-          this.state.page
-        }&q=${this.formatQueryString(this.state.query)}`;
-
-        this.fetchData(url);
-      }
-    );
-  };
-
   handleRefresh = () => {
-    this.setState(
-      {
-        page: 1,
-        refreshing: true,
-        data: [],
-      },
-      () => {
-        this.makeUrlWithRequest();
-      }
-    );
+    this.props.refreshResults();
   };
 
   handleLoadMore = () => {
-    if (this.state.loading || this.state.page >= this.state.queryPages) return;
-    this.setState(
-      (state) => ({
-        page: state.page + 1,
-      }),
-      () => {
-        this.makeUrlWithRequest();
-      }
-    );
+    this.props.loadMoreResults();
   };
 
   handleSearch = (query) => {
-    this.setState({ query, data: [] }, () => this.makeUrlWithRequest());
+    this.props.fetchSearch(query);
   };
 
   handleSearchClear = () => {
-    this.props.route.params = null;
-    this.setState({ query: "", data: [], page: 1 });
+    this.props.clearSearch();
   };
 
   onViewableItemsChanged = ({ viewableItems }) => {
-    this.setState({ listTopIndex: viewableItems[0].index });
+    const viewableItemsIndex = viewableItems[0] ? viewableItems[0].index : 0;
+    this.props.setViewableItems(viewableItemsIndex);
   };
 
   renderEmptyContainer = () => {
     return (
       <Text style={styles.textCenter}>
-        {!this.state.loading && !this.state.data.length
+        {!this.props.loading && !this.props.data.length
           ? "No Images Found"
           : "Loading Images"}
       </Text>
@@ -174,7 +96,7 @@ export default class HomeScreen extends React.Component {
         round
         onChangeText={this.handleSearch}
         onClear={this.handleSearchClear}
-        value={this.state.query}
+        value={this.props.query}
       />
     );
   };
@@ -202,10 +124,11 @@ export default class HomeScreen extends React.Component {
   };
 
   renderFooter = () => {
-    if (!this.state.data.length) return null;
+    if (!this.props.data.length) return null;
     return (
       <View style={styles.footerContainer}>
-        {!this.state.loading && this.state.page >= this.state.queryPages ? (
+        {!this.props.loading &&
+        this.props.pageNumber >= this.props.resultPages ? (
           <Text style={styles.textCenter}>No More Images Found</Text>
         ) : (
           <ActivityIndicator animating size="large" color="#0000ff" />
@@ -215,18 +138,29 @@ export default class HomeScreen extends React.Component {
   };
 
   render() {
+    console.log(this.props);
+    // console.log({
+    //   data: this.props.data.length,
+    //   error: this.props.error,
+    //   loading: this.props.loading,
+    //   pageNumber: this.props.pageNumber,
+    //   query: this.props.query,
+    //   refreshing: this.props.refreshing,
+    //   resultPages: this.props.resultPages,
+    // });
+    // return null;
     return (
       <SafeAreaView>
         <StatusBar style="light-content" />
         <FlatList
-          data={this.state.data}
-          keyExtractor={(item) => (item.id + item.user_id).toString()}
+          data={this.props.data}
+          keyExtractor={(image) => image.id + image.previewURL}
           stickyHeaderIndices={[0]}
-          refreshing={this.state.refreshing}
+          refreshing={this.props.refreshing}
           onEndReachedThreshold={0.5}
           numColumns={2}
-          // numColumns={this.state.orientation === "portrait" ? 2 : 4}
-          // key={this.state.orientation === "portrait" ? 2 : 4}
+          // numColumns={this.props.orientation === "portrait" ? 2 : 4}
+          // key={this.props.orientation === "portrait" ? 2 : 4}
           ListHeaderComponent={this.renderHeader}
           renderItem={this.renderItem}
           ItemSeparatorComponent={this.renderSeparator}
@@ -243,3 +177,24 @@ export default class HomeScreen extends React.Component {
     );
   }
 }
+
+const mapStateToProps = (state) => {
+  const { data, error, loading, pageNumber, query, refreshing, resultPages } =
+    state;
+  return {
+    ...state,
+  };
+};
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    fetchImages: () => dispatch(fetchImages()),
+    refreshResults: () => dispatch(refreshResults()),
+    loadMoreResults: () => dispatch(loadMoreResults()),
+    fetchSearch: (query = "") => dispatch(fetchSearch(query)),
+    clearSearch: () => dispatch(clearSearch()),
+    setViewableItems: (index = 0) => dispatch(setViewableItems(index)),
+  };
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(HomeScreen);
