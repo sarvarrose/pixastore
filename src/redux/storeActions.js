@@ -64,15 +64,14 @@ const setViewableItems = (index) => {
   };
 };
 
-// TODO implement debounce
+// TODO: implement debounce
 const fetchImages = () => {
   return (dispatch, getState) => {
     const { query, pageNumber } = getState();
     dispatch(fetchRequest());
     let queryURL = `https://pixabay.com/api/?key=${PIXA_KEY}&page=${pageNumber}&q=${formatQuery(
       query
-    )}`; // TODO set page number here
-    console.log("Query URL: " + queryURL);
+    )}`;
     axios
       .get(queryURL)
       .then((response) => {
@@ -88,7 +87,6 @@ const fetchImages = () => {
 const refreshResults = () => {
   return (dispatch, getState) => {
     const { query } = getState();
-    console.log("Refresh Results: " + query);
     dispatch(setRefreshResults());
     dispatch(fetchImages());
   };
@@ -97,7 +95,6 @@ const refreshResults = () => {
 const loadMoreResults = () => {
   return (dispatch, getState) => {
     const { query, loading, pageNumber, resultPages } = getState();
-    console.log("Load More Results: " + query);
     if (loading || pageNumber >= resultPages) {
       console.log("Skip Action LoadMoreResults");
       return;
@@ -109,8 +106,6 @@ const loadMoreResults = () => {
 
 const fetchSearch = (query) => {
   return (dispatch) => {
-    // const { query } = getState();
-    console.log("Refresh Results: " + query);
     dispatch(setFetchSearch(query));
     dispatch(fetchImages());
   };

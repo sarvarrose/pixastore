@@ -18,7 +18,7 @@ const initialState = {
   refreshing: false,
   error: "",
   viewableItemsIndex: 0,
-  // orientation: isPortrait() ? "portrait" : "landscape",
+  // orientation: isPortrait() ? "portrait" : "landscape", //TODO: implement orientation change listener
 };
 
 const storeReducer = (state = initialState, action) => {
@@ -45,7 +45,6 @@ const storeReducer = (state = initialState, action) => {
         ...state,
         loading: false,
         error: payload.error,
-        // data: [],
       };
     case REFRESH_RESULTS:
       return {

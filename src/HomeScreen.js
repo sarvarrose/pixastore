@@ -9,7 +9,6 @@ import {
   Text,
   TouchableOpacity,
   BackHandler,
-  Dimensions,
   Alert,
 } from "react-native";
 import { connect } from "react-redux";
@@ -36,8 +35,7 @@ class HomeScreen extends React.Component {
       "hardwareBackPress",
       this.backAction
     );
-    console.log(this.props);
-    this.props.fetchImages(); //set query parameter
+    this.props.fetchImages();
   }
 
   componentWillUnmount() {
@@ -101,7 +99,7 @@ class HomeScreen extends React.Component {
     );
   };
 
-  renderItem = ({ item, index }) => {
+  renderItem = ({ item }) => {
     return (
       <View style={styles.itemContainer}>
         <TouchableOpacity
@@ -138,17 +136,6 @@ class HomeScreen extends React.Component {
   };
 
   render() {
-    console.log(this.props);
-    // console.log({
-    //   data: this.props.data.length,
-    //   error: this.props.error,
-    //   loading: this.props.loading,
-    //   pageNumber: this.props.pageNumber,
-    //   query: this.props.query,
-    //   refreshing: this.props.refreshing,
-    //   resultPages: this.props.resultPages,
-    // });
-    // return null;
     return (
       <SafeAreaView>
         <StatusBar style="light-content" />
@@ -179,11 +166,7 @@ class HomeScreen extends React.Component {
 }
 
 const mapStateToProps = (state) => {
-  const { data, error, loading, pageNumber, query, refreshing, resultPages } =
-    state;
-  return {
-    ...state,
-  };
+  return { ...state };
 };
 
 const mapDispatchToProps = (dispatch) => {
